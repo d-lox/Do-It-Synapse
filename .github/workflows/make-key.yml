@@ -1,0 +1,29 @@
+name: Make signing key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Create key
+        run: |
+          PASS=$(openssl rand -hex 16)
+          keytool -genkeypair -keystore synapse.jks -alias synapse -keyalg RSA -keysize 2048 -validity 36500 -storepass "$PASS" -keypass "$PASS" -dname "CN=Synapse, O=dlox, C=IN"
+          mkdir out
+          echo "$PASS" > out/password.txt
+          base64 -w 0 synapse.jks > out/keystore-base64.txt
+
+      - name: Save files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Synapse-key
+          path: out
+          retention-days: 1
