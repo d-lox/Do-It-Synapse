@@ -2,331 +2,109 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Synapse</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{
-  --a1:#3fb68b;--a2:#4a9fd8;--a3:#8bc96a;
-  --bg:#05080b;--text:#f2f5f7;--muted:rgba(242,245,247,.62);
-  --glass:rgba(255,255,255,.07);--glass-b:rgba(255,255,255,.16);--hi:rgba(255,255,255,.45);
-  --panel:rgba(8,12,16,.55);--line:rgba(255,255,255,.1);--shadow:rgba(0,0,0,.28);
-  --blur:26px;
-}
-[data-theme=warm]{
-  --bg:#f1e6c8;--text:#2a2418;--muted:rgba(42,36,24,.62);
-  --glass:rgba(255,252,240,.38);--glass-b:rgba(255,255,255,.75);--hi:rgba(255,255,255,.95);
-  --panel:rgba(241,230,200,.6);--line:rgba(60,45,10,.14);--shadow:rgba(90,70,20,.18);
-}
-[data-theme=amoled]{--bg:#000;--panel:rgba(0,0,0,.6)}
-[hidden]{display:none!important}
-html,body{margin:0;height:100%;overflow:hidden}
-html{background:var(--bg);color:var(--text);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
-body{background:transparent}
-button{font:inherit;color:inherit;cursor:pointer}
-svg{display:block}
+  :root {
+    --bg-color: #000000;
+    --text-color: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --accent-gradient: linear-gradient(135deg, #4facfe, #00f2fe);
+  }
+  
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body, html {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+  }
 
-/* ambient background */
-#bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--bg)}
-.blob{position:absolute;width:85vmax;height:85vmax;border-radius:50%;opacity:.5;will-change:transform}
-.b1{left:-30vmax;top:-25vmax;background:radial-gradient(circle,var(--a1) 0%,transparent 62%);animation:d1 26s ease-in-out infinite alternate}
-.b2{right:-35vmax;top:15vh;background:radial-gradient(circle,var(--a2) 0%,transparent 62%);animation:d2 32s ease-in-out infinite alternate}
-.b3{left:-10vmax;bottom:-40vmax;background:radial-gradient(circle,var(--a3) 0%,transparent 62%);animation:d3 38s ease-in-out infinite alternate}
-@keyframes d1{to{transform:translate(35vmax,22vmax) scale(1.15)}}
-@keyframes d2{to{transform:translate(-30vmax,18vmax) scale(.9)}}
-@keyframes d3{to{transform:translate(28vmax,-22vmax) scale(1.2)}}
-.thinking .blob{animation-duration:7s}
-[data-theme=warm] .blob{opacity:.42}
-[data-theme=amoled] .blob{opacity:.6}
-[data-theme=amoled] .b1{left:-58vmax;top:-52vmax}
-[data-theme=amoled] .b2{right:-62vmax;top:30vh}
-[data-theme=amoled] .b3{left:-42vmax;bottom:-66vmax}
-[data-rc="1"] .blob{opacity:.22}
-[data-bgstyle=still] .blob,[data-rm="1"] .blob{animation:none}
-[data-bgstyle=flat] .blob{display:none}
-[data-bgstyle=flat] #bg::after{content:"";position:absolute;inset:0;background:var(--a1);opacity:.07}
-[data-rm="1"][data-rc="1"] .blob{display:none}
-[data-rm="1"] *{transition-duration:.01s!important}
+  /* Ambient Background */
+  .ambient {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+    background: radial-gradient(circle at 50% 40%, rgba(79, 172, 254, 0.15), transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(0, 242, 254, 0.1), transparent 50%);
+    animation: pulse 10s infinite alternate ease-in-out;
+  }
+  @keyframes pulse {
+    0% { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.05); }
+  }
 
-/* glass */
-.glass{position:relative;isolation:isolate;background:var(--glass);
-  -webkit-backdrop-filter:blur(var(--blur)) saturate(190%);backdrop-filter:blur(var(--blur)) saturate(190%);
-  border:1px solid var(--glass-b);
-  box-shadow:inset 1.5px 1.5px 1px -.5px var(--hi),inset -1px -1px 1px -.5px rgba(255,255,255,.18),0 10px 30px var(--shadow)}
-.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
-  background:linear-gradient(135deg,rgba(255,255,255,.24),rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(255,255,255,.09))}
-.card{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:22px;
-  box-shadow:inset 1px 1px 0 var(--hi)}
-[data-theme=warm] .card{background:rgba(255,255,255,.35)}
+  /* Apple Glass Class */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  }
 
-.btn{border:0;border-radius:999px;padding:14px 30px;font-weight:500;color:#04100c;
-  background:linear-gradient(135deg,var(--a1),var(--a2))}
-.btn.ghost{background:transparent;color:var(--muted);padding:12px 20px}
-.ibtn{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;padding:0;color:var(--text)}
-.ibtn svg{width:20px;height:20px}
+  /* Screens */
+  .screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 10; display: flex; flex-direction: column;
+    transition: opacity 0.4s ease;
+  }
+  #main-app { opacity: 0; pointer-events: none; }
 
-/* app layout */
-#app{display:flex;flex-direction:column;height:100%}
-body.entry-on #app{display:none}
-#top{display:flex;align-items:center;gap:10px;padding:max(env(safe-area-inset-top),10px) 14px 8px}
-#top .title{flex:1;text-align:center;font-weight:300;letter-spacing:.38em;font-size:.78rem;color:var(--muted);padding-left:.38em}
-#cs{margin:0 14px 6px;padding:8px 14px;border-radius:999px;display:flex;align-items:center;gap:8px}
-#cs input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font:inherit}
-#csCount{font-size:.75rem;color:var(--muted)}
-#chat{flex:1;overflow-y:auto;padding:8px 16px 12px;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
-#empty{margin:auto;text-align:center;padding:0 20px}
-#empty img{width:92px;height:92px;object-fit:contain;mix-blend-mode:screen;margin:0 auto 6px}
-[data-theme=warm] #empty img{mix-blend-mode:normal}
-#empty h2{margin:0 0 6px;font-weight:300;font-size:1.6rem}
-#empty p{margin:0;color:var(--muted)}
-#msgs{display:flex;flex-direction:column;gap:12px}
-.msg{max-width:84%}
-.msg.user{align-self:flex-end}
-.msg.ai{align-self:flex-start}
-.bub{padding:11px 15px;border-radius:20px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
-.msg.user .bub{background:linear-gradient(135deg,var(--a1),var(--a2));color:#04100c;border-bottom-right-radius:6px}
-.msg.ai .bub{background:var(--glass);border:1px solid var(--glass-b);box-shadow:inset 1px 1px 0 var(--hi);border-bottom-left-radius:6px}
-.lbl{font-size:.7rem;color:var(--muted);margin:4px 8px 0}
+  /* Entry Screen */
+  #entry-screen { align-items: center; justify-content: center; z-index: 20; }
+  .logo-img { width: 120px; height: 120px; border-radius: 28px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+  h1 { font-weight: 300; letter-spacing: 8px; margin: 0 0 8px 8px; font-size: 28px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 40px; letter-spacing: 1px; }
+  .btn {
+    padding: 16px 36px; border-radius: 100px; border: none;
+    color: #fff; background: var(--accent-gradient);
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+  }
 
-#composer{position:relative;padding:6px 12px max(env(safe-area-inset-bottom),12px)}
-#chipRow{display:flex;padding:0 4px 8px}
-.chip{padding:7px 13px;border-radius:999px;font-size:.78rem;display:inline-flex;gap:7px;align-items:center;color:var(--text)}
-.chip svg{width:14px;height:14px}
-#att{display:flex;gap:6px;flex-wrap:wrap;padding:0 4px 8px}
-.ac{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 12px;border-radius:999px;font-size:.78rem;background:var(--glass);border:1px solid var(--glass-b);max-width:70%}
-.ac span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac button{border:0;background:transparent;width:22px;height:22px;padding:0;color:var(--muted)}
-.bar{display:flex;align-items:flex-end;gap:2px;padding:6px;border-radius:32px}
-.bar textarea{flex:1;min-width:0;background:transparent;border:0;outline:0;resize:none;color:var(--text);
-  font:inherit;font-size:1rem;padding:10px 6px;max-height:120px;line-height:1.35}
-.bar textarea::placeholder{color:var(--muted)}
-.rb{width:40px;height:40px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;flex:none;padding:0}
-.rb svg{width:21px;height:21px}
-.rb.send{background:linear-gradient(135deg,var(--a1),var(--a2));color:#04100c}
-#plusMenu{position:absolute;left:12px;bottom:100%;width:230px;border-radius:22px;padding:6px;
-  opacity:0;visibility:hidden;transform:translateY(8px);transition:.18s;z-index:20}
-#plusMenu.open{opacity:1;visibility:visible;transform:none}
-.mi{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;background:transparent;border-radius:16px;text-align:left}
-.mi svg{width:20px;height:20px;flex:none}
-.mi:active{background:var(--line)}
+  /* Header & Drawer */
+  header { margin: 48px 16px 12px; padding: 12px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .icon-btn { font-size: 20px; opacity: 0.8; cursor: pointer; }
+  
+  #drawer {
+    position: fixed; top: 0; left: -300px; width: 280px; height: 100%; z-index: 100;
+    border-radius: 0 24px 24px 0; border-left: none;
+    transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 60px 20px 20px; display: flex; flex-direction: column; gap: 16px;
+  }
+  #drawer-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 90; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .drawer-item { padding: 16px; border-radius: 12px; font-size: 16px; color: #ddd; display: flex; align-items: center; gap: 12px; }
 
-/* drawer, sheet, settings */
-#scrim{position:fixed;inset:0;background:rgba(0,0,0,.42);opacity:0;visibility:hidden;transition:.25s;z-index:30}
-#scrim.open{opacity:1;visibility:visible}
-#drawer{position:fixed;top:0;bottom:0;left:0;width:min(84vw,340px);z-index:40;border-radius:0 30px 30px 0;
-  background:var(--panel);transform:translateX(-105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
-  padding:max(env(safe-area-inset-top),16px) 14px 16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
-#drawer.open{transform:none}
-.dhead{display:flex;align-items:center;gap:12px;padding:6px 4px 10px}
-.av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2)) center/cover;
-  display:grid;place-items:center;color:#04100c;font-weight:600;flex:none;overflow:hidden}
-.dname{font-weight:500}.dsub{font-size:.78rem;color:var(--muted)}
-.dsearch{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
-.dsearch svg{width:18px;height:18px;color:var(--muted);flex:none}
-.dsearch input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font:inherit}
-.soon{font-size:.85rem;color:var(--muted);line-height:1.5;padding:10px 4px}
-.dit{display:flex;align-items:center;gap:14px;width:100%;padding:13px 12px;border:0;background:transparent;border-radius:16px;text-align:left;font-size:1rem}
-.dit svg{width:21px;height:21px;flex:none;color:var(--a1)}
-.dit small{margin-left:auto;font-size:.68rem;color:var(--muted)}
-.dit:active{background:var(--line)}
-
-#sheet{position:fixed;left:10px;right:10px;bottom:10px;z-index:40;border-radius:30px;padding:14px 10px 10px;
-  transform:translateY(115%);transition:transform .3s cubic-bezier(.2,.8,.2,1);background:var(--panel)}
-#sheet.open{transform:none}
-#sheet h3{margin:4px 14px 8px;font-weight:500;font-size:.9rem;color:var(--muted)}
-.opt{display:block;width:100%;text-align:left;padding:13px 14px;border:0;background:transparent;border-radius:18px}
-.opt b{display:block;font-weight:500}.opt span{font-size:.78rem;color:var(--muted)}
-.opt.sel{background:var(--line)}
-.opt.dis{opacity:.5}
-
-#settings{position:fixed;inset:0;z-index:50;background:var(--panel);
-  -webkit-backdrop-filter:blur(34px) saturate(170%);backdrop-filter:blur(34px) saturate(170%);
-  transform:translateX(100%);visibility:hidden;transition:transform .3s cubic-bezier(.2,.8,.2,1),visibility .3s;
-  display:flex;flex-direction:column}
-#settings.open{transform:none;visibility:visible}
-.shead{display:flex;align-items:center;gap:12px;padding:max(env(safe-area-inset-top),12px) 14px 8px}
-.shead h2{margin:0;font-weight:300;font-size:1.3rem}
-.ssearch{margin:4px 14px 10px;padding:10px 16px;border-radius:999px;display:flex;align-items:center;gap:8px}
-.ssearch svg{width:18px;height:18px;color:var(--muted);flex:none}
-.ssearch input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--text);font:inherit}
-.sbody{flex:1;overflow-y:auto;padding:4px 14px max(env(safe-area-inset-bottom),24px);display:flex;flex-direction:column;gap:10px}
-details.card{padding:0 16px}
-details summary{list-style:none;display:flex;align-items:center;padding:16px 0;font-weight:500;cursor:pointer}
-details summary::-webkit-details-marker{display:none}
-details summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:.2s}
-details[open] summary::after{transform:rotate(225deg)}
-.row{padding:13px 0;border-top:1px solid var(--line)}
-.rl{font-size:.85rem;color:var(--muted);margin-bottom:9px}
-.seg{display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line)}
-[data-theme=warm] .seg{background:rgba(255,255,255,.4)}
-.seg button{flex:1;border:0;background:transparent;padding:9px 6px;border-radius:999px;font-size:.84rem}
-.seg button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#04100c;font-weight:500}
-.trow{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.trow .rl{margin:0;color:var(--text);font-size:.95rem}
-.tog{width:50px;height:30px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.1);position:relative;padding:0;flex:none;transition:.2s}
-.tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.35)}
-.tog.on{background:linear-gradient(135deg,var(--a1),var(--a2))}
-.tog.on::after{transform:translateX(20px)}
-#swatches{display:flex;gap:12px;flex-wrap:wrap}
-.swatch{width:38px;height:38px;border-radius:50%;border:2px solid transparent;padding:0}
-.swatch.on{border-color:var(--text);box-shadow:0 0 0 3px var(--panel) inset}
-input[type=range]{width:100%;accent-color:var(--a1)}
-.tin{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--text);font:inherit;outline:0}
-.btnrow{display:flex;gap:10px;align-items:center}
-.sbtn{border:1px solid var(--line);background:rgba(255,255,255,.07);padding:10px 16px;border-radius:999px;font-size:.88rem}
-.sbtn.danger{color:#ff6b6b}
-.note{font-size:.85rem;color:var(--muted);line-height:1.55;padding:2px 0 14px}
-
-/* entry */
-.screen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
-.e-step{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;width:100%;max-width:380px;animation:fade .8s ease both}
-@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-img.big{width:min(52vw,210px);height:min(52vw,210px);object-fit:contain;mix-blend-mode:screen}
-[data-theme=warm] img.big{mix-blend-mode:normal}
-.e-step h1{margin:6px 0 0;font-weight:300;letter-spacing:.5em;padding-left:.5em;font-size:1.6rem}
-.e-step p{margin:0 0 18px;color:var(--muted)}
-.formcard{width:100%;padding:26px 22px;border-radius:30px;display:flex;flex-direction:column;align-items:center;gap:16px}
-.formcard h2{margin:0;font-weight:300}
-.avatar{width:96px;height:96px;font-size:2rem;cursor:pointer;border:1px dashed var(--glass-b)}
-
-#toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(10px);z-index:80;padding:11px 18px;border-radius:999px;
-  font-size:.85rem;max-width:88vw;text-align:center;opacity:0;visibility:hidden;transition:.25s}
-#toast.show{opacity:1;visibility:visible;transform:translateX(-50%)}
+  /* Chat Area & Bottom Bar */
+  #chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; }
+  #bottom-bar { margin: 8px 16px 24px; padding: 8px 8px 8px 16px; border-radius: 30px; display: flex; gap: 12px; align-items: center; }
+  .circle-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  input[type="text"] { flex: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 16px; padding: 8px 0; }
+  
+  .model-chip { position: absolute; bottom: 88px; left: 50%; transform: translateX(-50%); padding: 6px 16px; border-radius: 20px; font-size: 12px; color: #aaa; border-radius: 20px;}
 </style>
 </head>
 <body>
-<div id="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 
-<div id="app">
-  <header id="top">
-    <button class="ibtn glass" id="btnMenu" data-ic="menu" aria-label="Menu"></button>
-    <div class="title">SYNAPSE</div>
-    <button class="ibtn glass" id="btnSearch" data-ic="search" aria-label="Search chat"></button>
-    <button class="ibtn glass" id="btnSettings" data-ic="sliders" aria-label="Settings"></button>
-  </header>
-  <div id="cs" class="glass" hidden>
-    <input id="csIn" placeholder="Search this chat">
-    <span id="csCount"></span>
+  <!-- Ambient Background -->
+  <div class="ambient"></div>
+
+  <!-- Entry Screen -->
+  <div id="entry-screen" class="screen">
+    <img src="Yes.png" alt="Logo" class="logo-img">
+    <h1>SYNAPSE</h1>
+    <div class="subtitle">AI STUDY AGENT</div>
+    <button class="btn" onclick="startApp()">Start</button>
   </div>
-  <main id="chat">
-    <div id="empty">
-      <img class="logo" src="Yes.png" alt="">
-      <h2 id="greet">Hello</h2>
-      <p>What are we studying today?</p>
-    </div>
-    <div id="msgs"></div>
-  </main>
-  <footer id="composer">
-    <div id="plusMenu" class="glass">
-      <button class="mi" id="pmPhoto"><span data-ic="image"></span>Photo from gallery</button>
-      <button class="mi" id="pmDoc"><span data-ic="file"></span>PDF or text file</button>
-      <button class="mi" id="pmPaste"><span data-ic="clip"></span>Paste text</button>
-    </div>
-    <div id="chipRow">
-      <button class="chip glass" id="modelChip"><span data-ic="spark"></span><span id="modelName">Smart · auto</span></button>
-    </div>
-    <div id="att"></div>
-    <div class="bar glass">
-      <button class="rb" id="btnPlus" data-ic="plus" aria-label="Add"></button>
-      <textarea id="ta" rows="1" placeholder="Ask anything about your studies"></textarea>
-      <button class="rb" id="btnCam" data-ic="camera" aria-label="Camera"></button>
-      <button class="rb" id="btnMic" data-ic="mic" aria-label="Voice"></button>
-      <button class="rb send" id="btnSend" data-ic="send" aria-label="Send"></button>
-    </div>
-  </footer>
-</div>
 
-<div id="scrim"></div>
-
-<aside id="drawer" class="glass">
-  <div class="dhead"><div class="av"></div><div><div class="dname" id="dName">Student</div><div class="dsub">Local profile</div></div></div>
-  <div class="dsearch"><span data-ic="search"></span><input id="dSearch" placeholder="Search chats and notes"></div>
-  <div id="dres" class="soon" hidden>Nothing saved yet. Saved chats arrive in Part 2.</div>
-  <button class="dit" data-act="new"><span data-ic="edit"></span>New chat</button>
-  <button class="dit" data-act="soon" data-soon="Old chats" data-part="Part 2"><span data-ic="history"></span>Old chats<small>Part 2</small></button>
-  <button class="dit" data-act="soon" data-soon="Flashcards" data-part="Part 3"><span data-ic="cards"></span>Flashcards<small>Part 3</small></button>
-  <button class="dit" data-act="soon" data-soon="Notes" data-part="Part 3"><span data-ic="file"></span>Notes<small>Part 3</small></button>
-  <button class="dit" data-act="soon" data-soon="Calculator" data-part="Part 4"><span data-ic="calc"></span>Calculator<small>Part 4</small></button>
-  <button class="dit" data-act="soon" data-soon="Bio toolkit" data-part="Part 4"><span data-ic="flask"></span>Bio toolkit<small>Part 4</small></button>
-</aside>
-
-<div id="sheet" class="glass">
-  <h3>Choose model</h3>
-  <button class="opt sel"><b>Smart (auto)</b><span>Online when connected, offline when not</span></button>
-  <button class="opt dis"><b>Online models</b><span>Available in Part 2</span></button>
-  <button class="opt dis"><b>Offline models</b><span>Available in Part 6</span></button>
-</div>
-
-<section id="settings">
-  <div class="shead"><button class="ibtn glass" id="sBack" data-ic="back" aria-label="Back"></button><h2>Settings</h2></div>
-  <div class="ssearch glass"><span data-ic="search"></span><input id="sSearch" placeholder="Search settings"></div>
-  <div class="sbody">
-
-    <details class="card" open data-k="profile name photo">
-      <summary>Profile</summary>
-      <div class="row"><div class="rl">Your name</div><input class="tin" id="sName" placeholder="Your name"></div>
-      <div class="row"><div class="rl">Profile photo</div>
-        <div class="btnrow"><div class="av" id="sAv"></div>
-          <button class="sbtn" id="sPhoto">Choose photo</button>
-          <button class="sbtn" id="sPhotoDel">Remove</button></div></div>
-    </details>
-
-    <details class="card" data-k="general notifications language">
-      <summary>General</summary>
-      <div class="note">Notifications (only when a long job finishes) and language. Arrives in Part 5.</div>
-    </details>
-
-    <details class="card" data-k="ai engine provider key online offline auto gemini groq">
-      <summary>AI engine</summary>
-      <div class="note">AI mode (Online, Offline, Auto), providers, API keys and the usage meter. Arrives in Part 2.</div>
-    </details>
-
-    <details class="card" data-k="offline models download qwen llama phi">
-      <summary>Offline models</summary>
-      <div class="note">Download Qwen 1.5B, Llama 3B or Phi-4-mini, or add your own link. Arrives in Part 6.</div>
-    </details>
-
-    <details class="card" data-k="study quiz level flashcards">
-      <summary>Study</summary>
-      <div class="note">Level, explanation style, quiz defaults and source citations. Arrives in Part 3.</div>
-    </details>
-
-    <details class="card" open data-k="appearance theme colour color accent background motion glass text size">
-      <summary>Appearance</summary>
-      <div class="row"><div class="rl">Theme</div>
-        <div class="seg" data-key="theme"><button data-val="dark">Dark</button><button data-val="warm">Warm light</button><button data-val="amoled">AMOLED</button></div></div>
-      <div class="row"><div class="rl">Accent colour</div><div id="swatches"></div></div>
-      <div class="row"><div class="rl">Background style</div>
-        <div class="seg" data-key="bgstyle"><button data-val="ambient">Ambient</button><button data-val="still">Still</button><button data-val="flat">Flat</button></div></div>
-      <div class="row"><div class="trow"><div class="rl">Reduce motion</div><button class="tog" data-key="rm" aria-label="Reduce motion"></button></div></div>
-      <div class="row"><div class="trow"><div class="rl">Reduce colour</div><button class="tog" data-key="rc" aria-label="Reduce colour"></button></div></div>
-      <div class="row"><div class="rl">Glass blur</div><input type="range" id="blurR" min="6" max="44" step="1"></div>
-      <div class="row"><div class="rl">Text size</div>
-        <div class="seg" data-key="text"><button data-val="s">Small</button><button data-val="m">Medium</button><button data-val="l">Large</button></div></div>
-    </details>
-
-    <details class="card" data-k="voice microphone speech">
-      <summary>Voice</summary>
-      <div class="note">Microphone and speech settings. Arrives in Part 3.</div>
-    </details>
-
-    <details class="card" data-k="storage data backup export import save">
-      <summary>Storage and data</summary>
-      <div class="note">Save toggles for chats, flashcards, notes and original files, plus Export and Import backup. Arrives in Part 5.</div>
-    </details>
-
-    <details class="card" data-k="privacy tracking">
-      <summary>Privacy</summary>
-      <div class="note">Synapse has no accounts and no tracking. Your profile and settings are stored only on this phone. When online AI arrives, the text, photos and files you send will go to the provider you choose, and some free tiers may use them to improve their products. Your API key will stay on this phone.</div>
-    </details>
-
-    <details class="card" data-k="do it task link">
-      <summary>Do It</summary>
-      <div class="note">A link to the Do It repo and the "send task to Do It" option. Arrives in Part 5.</div>
-    </details>
-
-    <details class="card" data-k="developer reset debug prompt">
-      <summary>Developer</summary>
-      <div class="note">System prompt, temperature, routing rules and debug log arrive later.</div>
-      <div 
+  <!-- Drawer & Overlay -->
+  <div id="drawer-overlay" onclick="toggleDrawer()"></div>
+  <nav id="drawer" class="glass">
+    <div style="font-size: 22px; font-weight: 300; letter-spacing: 4px; margin-bottom: 20px; padding-left: 16px;">SYNAPSE</div>
+    <div class="drawer-item" style="background: rgba(255,255,255,0.1); color: #fff;">💬 
