@@ -35,8 +35,40 @@ jobs:
       - name: Create Android project
         run: npx cap add android
 
+      - name: Load permanent key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/synapse.jks"
+          keytool -list -keystore "$GITHUB_WORKSPACE/synapse.jks" -storepass "$KEYSTORE_PASSWORD"
+
+      - name: Tell Android to use the key
+        run: |
+          cat >> android/app/build.gradle <<'EOF'
+
+          android {
+              signingConfigs {
+                  synapse {
+                      storeFile file(System.getenv("KEYSTORE_PATH"))
+                      storePassword System.getenv("KEYSTORE_PASSWORD")
+                      keyAlias "synapse"
+                      keyPassword System.getenv("KEYSTORE_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  debug {
+                      signingConfig signingConfigs.synapse
+                  }
+              }
+          }
+          EOF
+
       - name: Build APK
         working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/synapse.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
