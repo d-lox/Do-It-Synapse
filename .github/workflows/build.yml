@@ -35,6 +35,20 @@ jobs:
       - name: Create Android project
         run: npx cap add android
 
+      - name: Make app icon from Yes.png
+        run: |
+          sudo apt-get install -y imagemagick
+          RES=android/app/src/main/res
+          for d in "mdpi 48 108" "hdpi 72 162" "xhdpi 96 216" "xxhdpi 144 324" "xxxhdpi 192 432"; do
+            set -- $d
+            mkdir -p $RES/mipmap-$1
+            convert Yes.png -crop 720x720+140+140 +repage -resize $2x$2 $RES/mipmap-$1/ic_launcher.png
+            cp $RES/mipmap-$1/ic_launcher.png $RES/mipmap-$1/ic_launcher_round.png
+            INNER=$(( $3 * 66 / 100 ))
+            convert Yes.png -crop 720x720+140+140 +repage -resize ${INNER}x${INNER} -background black -gravity center -extent $3x$3 $RES/mipmap-$1/ic_launcher_foreground.png
+          done
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#000000</color>\n</resources>\n' > $RES/values/ic_launcher_background.xml
+
       - name: Load permanent key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
