@@ -2,109 +2,62 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Synapse</title>
 <style>
   :root {
     --bg-color: #000000;
-    --text-color: #ffffff;
-    --glass-bg: rgba(255, 255, 255, 0.06);
-    --glass-border: rgba(255, 255, 255, 0.12);
-    --accent-gradient: linear-gradient(135deg, #4facfe, #00f2fe);
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --accent-1: #10b981; /* Green */
+    --accent-2: #3b82f6; /* Blue */
+    --safe-top: env(safe-area-inset-top, 40px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
   }
-  
+
+  /* Themes */
+  body.theme-warm {
+    --bg-color: #1a1814;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --text-main: #f5eedc;
+  }
+  body.theme-amoled {
+    --bg-color: #000000;
+    --glass-bg: rgba(20, 20, 20, 0.4);
+  }
+
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
-  body, html {
-    margin: 0; padding: 0; height: 100%; width: 100%;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    overflow: hidden;
+  body {
+    margin: 0; height: 100vh; width: 100vw;
+    background-color: var(--bg-color); color: var(--text-main);
+    font-family: system-ui, -apple-system, sans-serif;
+    overflow: hidden; position: relative;
   }
 
   /* Ambient Background */
-  .ambient {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-    background: radial-gradient(circle at 50% 40%, rgba(79, 172, 254, 0.15), transparent 60%),
-                radial-gradient(circle at 80% 80%, rgba(0, 242, 254, 0.1), transparent 50%);
-    animation: pulse 10s infinite alternate ease-in-out;
-  }
-  @keyframes pulse {
-    0% { opacity: 0.7; transform: scale(1); }
-    100% { opacity: 1; transform: scale(1.05); }
-  }
-
-  /* Apple Glass Class */
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.08);
-  }
-
-  /* Screens */
-  .screen {
+  .ambient-bg {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 10; display: flex; flex-direction: column;
-    transition: opacity 0.4s ease;
+    z-index: 0; overflow: hidden; pointer-events: none;
   }
-  #main-app { opacity: 0; pointer-events: none; }
-
-  /* Entry Screen */
-  #entry-screen { align-items: center; justify-content: center; z-index: 20; }
-  .logo-img { width: 120px; height: 120px; border-radius: 28px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-  h1 { font-weight: 300; letter-spacing: 8px; margin: 0 0 8px 8px; font-size: 28px; }
-  .subtitle { color: #888; font-size: 14px; margin-bottom: 40px; letter-spacing: 1px; }
-  .btn {
-    padding: 16px 36px; border-radius: 100px; border: none;
-    color: #fff; background: var(--accent-gradient);
-    font-size: 16px; font-weight: 600; cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+  .ambient-blob {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); opacity: 0.4;
+    animation: float 10s infinite alternate ease-in-out;
+  }
+  .blob-1 {
+    width: 250px; height: 250px; background: var(--accent-1);
+    top: -50px; left: -50px;
+  }
+  .blob-2 {
+    width: 300px; height: 300px; background: var(--accent-2);
+    bottom: -100px; right: -50px; animation-delay: -5s;
+  }
+  @keyframes float {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(30px, 50px) scale(1.1); }
   }
 
-  /* Header & Drawer */
-  header { margin: 48px 16px 12px; padding: 12px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; }
-  .icon-btn { font-size: 20px; opacity: 0.8; cursor: pointer; }
-  
-  #drawer {
-    position: fixed; top: 0; left: -300px; width: 280px; height: 100%; z-index: 100;
-    border-radius: 0 24px 24px 0; border-left: none;
-    transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    padding: 60px 20px 20px; display: flex; flex-direction: column; gap: 16px;
-  }
-  #drawer-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5); z-index: 90; opacity: 0; pointer-events: none;
-    transition: opacity 0.3s;
-  }
-  .drawer-item { padding: 16px; border-radius: 12px; font-size: 16px; color: #ddd; display: flex; align-items: center; gap: 12px; }
-
-  /* Chat Area & Bottom Bar */
-  #chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; justify-content: flex-end; }
-  #bottom-bar { margin: 8px 16px 24px; padding: 8px 8px 8px 16px; border-radius: 30px; display: flex; gap: 12px; align-items: center; }
-  .circle-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  input[type="text"] { flex: 1; background: transparent; border: none; color: #fff; outline: none; font-size: 16px; padding: 8px 0; }
-  
-  .model-chip { position: absolute; bottom: 88px; left: 50%; transform: translateX(-50%); padding: 6px 16px; border-radius: 20px; font-size: 12px; color: #aaa; border-radius: 20px;}
-</style>
-</head>
-<body>
-
-  <!-- Ambient Background -->
-  <div class="ambient"></div>
-
-  <!-- Entry Screen -->
-  <div id="entry-screen" class="screen">
-    <img src="Yes.png" alt="Logo" class="logo-img">
-    <h1>SYNAPSE</h1>
-    <div class="subtitle">AI STUDY AGENT</div>
-    <button class="btn" onclick="startApp()">Start</button>
-  </div>
-
-  <!-- Drawer & Overlay -->
-  <div id="drawer-overlay" onclick="toggleDrawer()"></div>
-  <nav id="drawer" class="glass">
-    <div style="font-size: 22px; font-weight: 300; letter-spacing: 4px; margin-bottom: 20px; padding-left: 16px;">SYNAPSE</div>
-    <div class="drawer-item" style="background: rgba(255,255,255,0.1); color: #fff;">💬 
+  /* Glassmorphism */
