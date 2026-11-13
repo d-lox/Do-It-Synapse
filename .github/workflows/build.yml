@@ -2,64 +2,104 @@ name: Build Synapse APK
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install packages
+      - name: Install npm packages
         run: npm install
 
       - name: Install ImageMagick
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install -y imagemagick
 
-      - name: Prepare web files
+      - name: Prepare web folder
         run: |
+          set -e
           mkdir -p www
-          cp index.html www/
-          cp Yes.png No.png www/
+          cp index.html www/index.html
+          for f in Yes.png No.png; do
+            if [ ! -f "$f" ]; then
+              echo "ERROR: $f is missing from the repo root"
+              exit 1
+            fi
+            cp "$f" "www/$f"
+          done
+          ls -la www
 
-      - name: Add Android project
+      - name: Add Android platform
         run: npx cap add android
 
-      - name: Make app icon
+      - name: Launcher icon from Yes.png
         run: |
-          if command -v magick >/dev/null 2>&1; then IM=magick; else IM=convert; fi
-          for pair in "mdpi 48 108" "hdpi 72 162" "xhdpi 96 216" "xxhdpi 144 324" "xxxhdpi 192 432"; do
-            set -- $pair
-            d=android/app/src/main/res/mipmap-$1
-            mkdir -p $d
-            $IM Yes.png -crop 720x720+140+140 +repage -resize $2x$2 $d/ic_launcher.png
-            cp $d/ic_launcher.png $d/ic_launcher_round.png
-            $IM Yes.png -crop 720x720+140+140 +repage -resize $3x$3 $d/ic_launcher_foreground.png
-          done
-          cat > android/app/src/main/res/values/ic_launcher_background.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <color name="ic_launcher_background">#000000</color>
-          </resources>
-          EOF
+          set -e
+          res=android/app/src/main/res
+          mkdir -p $res/mipmap-anydpi-v26 $res/values
+          HEX=$(convert Yes.png -crop 1x1+0+0 -format "%[hex:p{0,0}]" info: 2>/dev/null || echo "000000")
+          HEX=${HEX:0:6}
+          echo "Icon background sampled: #$HEX"
+          echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><resources><color name=\"ic_launcher_background\">#$HEX</color></resources>" > $res/values/ic_launcher_background.xml
 
-      - name: Full screen (native code)
+          gen() {
+            dpi=$1; leg=$2; ada=$3
+            convert Yes.png -resize "${leg}x${leg}^" -gravity center -extent ${leg}x${leg} "$res/mipmap-$dpi/ic_launcher.png"
+            convert Yes.png -resize "${leg}x${leg}^" -gravity center -extent ${leg}x${leg} "$res/mipmap-$dpi/ic_launcher_round.png"
+            convert Yes.png -resize "${ada}x${ada}^" -gravity center -extent ${ada}x${ada} "$res/mipmap-$dpi/ic_launcher_bg.png"
+            convert -size ${ada}x${ada} xc:none "$res/mipmap-$dpi/ic_launcher_foreground.png"
+          }
+          gen mdpi    48  108
+          gen hdpi    72  162
+          gen xhdpi   96  216
+          gen xxhdpi  144 324
+          gen xxxhdpi 192 432
+
+          cat > $res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@mipmap/ic_launcher_bg"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+          cp $res/mipmap-anydpi-v26/ic_launcher.xml $res/mipmap-anydpi-v26/ic_launcher_round.xml
+
+      - name: Dark splash
         run: |
-          D=android/app/src/main/java/com/dlox/synapse
-          mkdir -p $D
-          cat > $D/MainActivity.java <<'EOF'
+          set -e
+          res=android/app/src/main/res
+          found=0
+          while IFS= read -r f; do
+            convert -size 1200x1200 xc:'#07080C' "png:$f"
+            found=1
+          done < <(find $res -type f -name 'splash.png' 2>/dev/null)
+          echo "splash files replaced: $found"
+
+      - name: Full screen native
+        run: |
+          set -e
+          base=android/app/src/main/java/com/dlox/synapse
+          mkdir -p $base
+          cat > $base/MainActivity.java <<'EOF'
           package com.dlox.synapse;
 
           import android.graphics.Color;
@@ -67,53 +107,74 @@ jobs:
           import android.os.Bundle;
           import android.view.View;
           import android.view.Window;
-          import androidx.core.graphics.Insets;
-          import androidx.core.view.ViewCompat;
           import androidx.core.view.WindowCompat;
           import androidx.core.view.WindowInsetsCompat;
+          import androidx.core.view.WindowInsetsControllerCompat;
+          import com.getcapacitor.Bridge;
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
-              public static volatile String lastInsets = "{\"top\":0,\"bottom\":0,\"left\":0,\"right\":0}";
+            public static String lastInsets = "{}";
 
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  registerPlugin(SynapseBars.class);
-                  super.onCreate(savedInstanceState);
-                  Window w = getWindow();
-                  WindowCompat.setDecorFitsSystemWindows(w, false);
-                  w.setStatusBarColor(Color.TRANSPARENT);
-                  w.setNavigationBarColor(Color.TRANSPARENT);
-                  if (Build.VERSION.SDK_INT >= 29) {
-                      w.setNavigationBarContrastEnforced(false);
-                  }
-                  View content = findViewById(android.R.id.content);
-                  ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
-                      Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-                      Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
-                      float d = getResources().getDisplayMetrics().density;
-                      boolean kb = ime.bottom > 0;
-                      v.setPadding(0, 0, 0, kb ? ime.bottom : 0);
-                      int top = Math.round(sys.top / d);
-                      int left = Math.round(sys.left / d);
-                      int right = Math.round(sys.right / d);
-                      int bottom = kb ? 0 : Math.round(sys.bottom / d);
-                      String json = "{\"top\":" + top + ",\"bottom\":" + bottom + ",\"left\":" + left + ",\"right\":" + right + "}";
-                      lastInsets = json;
-                      try {
-                          if (getBridge() != null && getBridge().getWebView() != null) {
-                              getBridge().getWebView().evaluateJavascript("window.__setInsets&&window.__setInsets(" + json + ")", null);
-                          }
-                      } catch (Exception e) { }
-                      return WindowInsetsCompat.CONSUMED;
-                  });
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              registerPlugin(SynapseBars.class);
+              super.onCreate(savedInstanceState);
+
+              Window w = getWindow();
+              WindowCompat.setDecorFitsSystemWindows(w, false);
+              w.setStatusBarColor(Color.TRANSPARENT);
+              w.setNavigationBarColor(Color.TRANSPARENT);
+              if (Build.VERSION.SDK_INT >= 29) {
+                w.setStatusBarContrastEnforced(false);
+                w.setNavigationBarContrastEnforced(false);
               }
+              WindowInsetsControllerCompat c =
+                  WindowCompat.getInsetsController(w, w.getDecorView());
+              c.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+
+              installInsets();
+            }
+
+            private void installInsets() {
+              final View d = getWindow().getDecorView();
+              d.setOnApplyWindowInsetsListener((v, insets) -> {
+                WindowInsetsCompat i = WindowInsetsCompat.toWindowInsetsCompat(insets, v);
+                androidx.core.graphics.Insets b =
+                    i.getInsets(WindowInsetsCompat.Type.systemBars());
+                lastInsets = "{\"top\":" + b.top + ",\"bottom\":" + b.bottom +
+                             ",\"left\":" + b.left + ",\"right\":" + b.right + "}";
+                pushInsets();
+                return WindowInsetsCompat.CONSUMED;
+              });
+              d.requestApplyInsets();
+              d.postDelayed(this::pushInsets, 400);
+              d.postDelayed(this::pushInsets, 1000);
+              d.postDelayed(this::pushInsets, 2200);
+            }
+
+            private void pushInsets() {
+              Bridge b = getBridge();
+              if (b == null || b.getWebView() == null) return;
+              final String js = "window.__setInsets && window.__setInsets(" + lastInsets + ")";
+              b.getWebView().post(() -> b.getWebView().evaluateJavascript(js, null));
+            }
+
+            @Override
+            public void onResume() {
+              super.onResume();
+              installInsets();
+            }
           }
           EOF
-          cat > $D/SynapseBars.java <<'EOF'
+
+      - name: Bars plugin
+        run: |
+          set -e
+          base=android/app/src/main/java/com/dlox/synapse
+          cat > $base/SynapseBars.java <<'EOF'
           package com.dlox.synapse;
 
-          import android.view.Window;
           import androidx.core.view.WindowCompat;
           import androidx.core.view.WindowInsetsControllerCompat;
           import com.getcapacitor.JSObject;
@@ -121,48 +182,54 @@ jobs:
           import com.getcapacitor.PluginCall;
           import com.getcapacitor.PluginMethod;
           import com.getcapacitor.annotation.CapacitorPlugin;
+          import org.json.JSONObject;
 
           @CapacitorPlugin(name = "SynapseBars")
           public class SynapseBars extends Plugin {
-              @PluginMethod
-              public void getInsets(PluginCall call) {
-                  try {
-                      call.resolve(new JSObject(MainActivity.lastInsets));
-                  } catch (Exception e) {
-                      call.resolve(new JSObject());
-                  }
-              }
 
-              @PluginMethod
-              public void setBars(PluginCall call) {
-                  final boolean darkIcons = Boolean.TRUE.equals(call.getBoolean("darkIcons", false));
-                  getActivity().runOnUiThread(() -> {
-                      Window w = getActivity().getWindow();
-                      WindowInsetsControllerCompat c = WindowCompat.getInsetsController(w, w.getDecorView());
-                      c.setAppearanceLightStatusBars(darkIcons);
-                      c.setAppearanceLightNavigationBars(darkIcons);
-                  });
-                  call.resolve();
+            @PluginMethod
+            public void setBars(PluginCall call) {
+              Boolean dark = call.getBoolean("darkIcons", false);
+              final boolean d = dark != null && dark;
+              getActivity().runOnUiThread(() -> {
+                WindowInsetsControllerCompat c = WindowCompat.getInsetsController(
+                    getActivity().getWindow(), getActivity().getWindow().getDecorView());
+                c.setAppearanceLightStatusBars(d);
+                c.setAppearanceLightNavigationBars(d);
+              });
+              call.resolve();
+            }
+
+            @PluginMethod
+            public void getInsets(PluginCall call) {
+              JSObject o = new JSObject();
+              try {
+                JSONObject j = new JSONObject(MainActivity.lastInsets);
+                o.put("top", j.optInt("top"));
+                o.put("bottom", j.optInt("bottom"));
+                o.put("left", j.optInt("left"));
+                o.put("right", j.optInt("right"));
+              } catch (Exception e) {
+                o.put("top", 0);
+                o.put("bottom", 0);
+                o.put("left", 0);
+                o.put("right", 0);
               }
+              call.resolve(o);
+            }
           }
           EOF
 
-      - name: Load signing key
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      - name: Signing key
         run: |
-          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/synapse.jks"
-          keytool -list -keystore "$GITHUB_WORKSPACE/synapse.jks" -storepass "$KEYSTORE_PASSWORD" -alias synapse | head -n 3
-
-      - name: Use signing key in Gradle
-        run: |
+          set -e
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/synapse.keystore
           cat >> android/app/build.gradle <<'EOF'
 
           android {
               signingConfigs {
-                  synapse {
-                      storeFile file(System.getenv("KEYSTORE_PATH"))
+                  release {
+                      storeFile file("synapse.keystore")
                       storePassword System.getenv("KEYSTORE_PASSWORD")
                       keyAlias "synapse"
                       keyPassword System.getenv("KEYSTORE_PASSWORD")
@@ -170,20 +237,14 @@ jobs:
               }
               buildTypes {
                   debug {
-                      signingConfig signingConfigs.synapse
+                      signingConfig signingConfigs.release
                   }
               }
           }
           EOF
 
-      - name: Build APK
-        working-directory: android
-        env:
-          KEYSTORE_PATH: ${{ github.workspace }}/synapse.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+      - name: Build
+        run: cd android && ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
